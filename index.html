@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workforce Dashboard</title>
+<style>
+:root {
+  --g1: #7c3aed; --g2: #06b6d4; --g3: #a855f7;
+  --card-bg: rgba(255,255,255,0.13);
+  --card-border: rgba(255,255,255,0.25);
+  --text-light: #fff;
+  --text-dark: #1a1a2e;
+  --accent: #10b981;
+  --surface: #f0f4ff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4ff; color: #1a1a2e; min-height: 100vh; }
+
+/* ── NAV ── */
+.top-bar { background: linear-gradient(135deg, var(--g1), var(--g2)); padding: 0 24px; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.2); flex-wrap: wrap; }
+.top-bar h1 { color: #fff; font-size: 1.1rem; font-weight: 700; padding: 14px 0; margin-right: 16px; white-space: nowrap; }
+.nav-tabs { display: flex; gap: 4px; flex: 1; }
+.nav-tab { padding: 12px 20px; color: rgba(255,255,255,0.75); cursor: pointer; border-bottom: 3px solid transparent; font-size: 0.85rem; font-weight: 600; transition: all 0.2s; white-space: nowrap; }
+.nav-tab:hover { color: #fff; }
+.nav-tab.active { color: #fff; border-bottom-color: #fff; }
+.theme-picker { display: flex; gap: 6px; align-items: center; padding: 8px 0; }
+.theme-picker span { color: rgba(255,255,255,0.8); font-size: 0.75rem; margin-right: 4px; }
+.theme-dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s; }
+.theme-dot:hover, .theme-dot.active { transform: scale(1.25); border-color: #fff; }
+
+/* ── PAGES ── */
+.page { display: none; padding: 24px; }
+.page.active { display: block; }
+
+/* ── SECTION HEADERS ── */
+.section-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 16px; padding-bottom: 6px; border-bottom: 2px solid; display: inline-block; }
+.section-wrap { margin-bottom: 36px; }
+
+/* ── GRADIENT CARDS ── */
+.grad-card { background: linear-gradient(135deg, var(--g1), var(--g2)); border-radius: 18px; padding: 20px; color: #fff; position: relative; overflow: hidden; }
+.grad-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.08), transparent); pointer-events: none; }
+.light-card { background: linear-gradient(135deg, rgba(124,58,237,0.12), rgba(6,182,212,0.18)); border-radius: 14px; padding: 18px; border: 1px solid rgba(124,58,237,0.2); }
+
+/* ── CAPACITY MANAGEMENT ── */
+.cap-grid { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 16px; }
+.cap-headcount .big-num { font-size: 2.8rem; font-weight: 900; line-height: 1; }
+.cap-headcount .label { font-size: 0.85rem; font-weight: 700; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }
+.cap-headcount .sub { font-size: 0.95rem; font-weight: 600; margin-top: 8px; opacity: 0.9; }
+.cap-headcount .source { font-size: 0.75rem; opacity: 0.7; margin-top: 4px; }
+.cap-mid { display: flex; flex-direction: column; gap: 10px; }
+.band-card { background: linear-gradient(135deg, var(--g1), var(--g2)); border-radius: 14px; padding: 14px; color: #fff; flex: 1; }
+.band-card .metric-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; opacity: 0.85; }
+.band-card .metric-val { font-size: 2rem; font-weight: 900; }
+.band-card .metric-sub { font-size: 0.75rem; opacity: 0.85; margin-top: 2px; }
+.band-card .metric-note { font-size: 0.7rem; opacity: 0.7; font-style: italic; }
+.hiring-grid { display: grid; grid-template-rows: auto auto; gap: 10px; }
+.hiring-flow { background: rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; font-size: 0.78rem; }
+.hiring-flow .flow-title { font-size: 0.7rem; font-weight: 700; text-align: center; margin-bottom: 8px; }
+.flow-box { background: rgba(6,182,212,0.5); border-radius: 6px; padding: 6px 10px; text-align: center; font-weight: 700; font-size: 0.85rem; display: inline-block; width: 100%; }
+.flow-row { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.flow-sub-box { background: rgba(255,255,255,0.2); border-radius: 6px; padding: 5px 8px; text-align: center; font-size: 0.75rem; flex: 1; }
+.hiring-stats { font-size: 0.78rem; line-height: 1.8; }
+.hiring-stats strong { font-weight: 700; }
+
+/* ── FULFILLMENT ── */
+.fulfill-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.fill-rate-card { background: linear-gradient(135deg, var(--g1), var(--g2)); border-radius: 18px; padding: 20px; color: #fff; }
+.fill-rate-card .fr-header { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; opacity: 0.9; }
+.fill-rate-card .fr-big { font-size: 3rem; font-weight: 900; line-height: 1.1; }
+.fill-gauges { display: flex; justify-content: space-around; margin-top: 14px; }
+.gauge-wrap { text-align: center; }
+.gauge-label { font-size: 0.7rem; opacity: 0.85; margin-top: 4px; }
+.gauge-val { font-size: 0.85rem; font-weight: 700; }
+svg.gauge { display: block; margin: 0 auto; }
+
+/* DI Issues */
+.di-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.di-card { border-radius: 14px; padding: 16px; }
+.di-card .di-label { font-size: 0.85rem; font-weight: 600; color: #334155; }
+.di-card .di-num { font-size: 2.8rem; font-weight: 900; color: #1a1a2e; line-height: 1.1; }
+.di-card .di-divider { border: none; border-top: 1.5px solid rgba(0,0,0,0.15); margin: 8px 0; }
+.di-card .di-sub { font-size: 0.72rem; color: #64748b; font-style: italic; }
+.di-card .di-pct { font-size: 1.1rem; font-weight: 800; color: #1a1a2e; }
+.di-split { display: flex; gap: 16px; }
+.di-split-item { flex: 1; }
+
+/* ── PERFORMANCE ── */
+.perf-section { margin-bottom: 24px; }
+.pac-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: center; }
+.pac-overall { background: linear-gradient(135deg, var(--g1), var(--g2)); border-radius: 16px; padding: 24px; color: #fff; text-align: center; }
+.pac-overall .ov-label { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; opacity: 0.9; }
+.pac-overall .ov-val { font-size: 3.2rem; font-weight: 900; line-height: 1.2; }
+.pac-overall-inner { background: rgba(255,255,255,0.9); border-radius: 10px; padding: 12px 20px; margin-top: 10px; display: inline-block; }
+.pac-overall-inner .ov-big { font-size: 2.8rem; font-weight: 900; color: #1a1a2e; }
+.pac-metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.pac-metric { background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(6,182,212,0.2)); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; border: 1px solid rgba(124,58,237,0.2); }
+.pac-metric .pm-icon { font-size: 1.8rem; }
+.pac-metric .pm-label { font-size: 0.78rem; color: #475569; }
+.pac-metric .pm-val { font-size: 1.6rem; font-weight: 800; color: #1a1a2e; }
+
+/* PPM */
+.ppm-top-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.ppm-card { border-radius: 14px; padding: 18px; }
+.ppm-big { font-size: 2.8rem; font-weight: 900; color: #1a1a2e; line-height: 1; }
+.ppm-sub { font-size: 0.8rem; color: #475569; margin-top: 4px; }
+.ppm-pct-sub { font-size: 1rem; font-weight: 700; color: #1a1a2e; }
+.ppm-icon { font-size: 2rem; text-align: center; margin-bottom: 8px; }
+
+/* Utilization */
+.util-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.util-main { background: linear-gradient(135deg, rgba(124,58,237,0.18), rgba(6,182,212,0.22)); border-radius: 14px; padding: 20px; border: 1px solid rgba(124,58,237,0.25); }
+.util-main .u-big { font-size: 2.8rem; font-weight: 900; color: #1a1a2e; }
+.util-main .u-label { font-size: 0.8rem; font-weight: 700; color: #475569; text-transform: uppercase; }
+.util-main .u-sub { font-size: 0.78rem; color: #64748b; margin-top: 6px; }
+.util-metric { background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(6,182,212,0.15)); border-radius: 12px; padding: 14px; display: flex; align-items: center; gap: 10px; border: 1px solid rgba(124,58,237,0.15); }
+.util-metric .um-icon { font-size: 1.6rem; }
+.util-metric .um-label { font-size: 0.75rem; color: #475569; }
+.util-metric .um-val { font-size: 1.5rem; font-weight: 800; color: #1a1a2e; }
+.util-sub-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* TABLES */
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 12px; }
+.data-table th { background: linear-gradient(90deg, var(--g1), var(--g2)); color: #fff; padding: 8px 10px; text-align: left; font-weight: 700; font-size: 0.75rem; }
+.data-table td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; }
+.data-table tr:nth-child(even) td { background: rgba(124,58,237,0.04); }
+.data-table tr.total-row td { font-weight: 800; background: #f1f5f9; }
+.cell-green { background: #16a34a !important; color: #fff; border-radius: 4px; padding: 2px 6px; font-weight: 600; }
+.cell-yellow { background: #eab308 !important; color: #fff; border-radius: 4px; padding: 2px 6px; font-weight: 600; }
+.cell-red { background: #dc2626 !important; color: #fff; border-radius: 4px; padding: 2px 6px; font-weight: 600; }
+.cell-grey { background: #94a3b8 !important; color: #fff; border-radius: 4px; padding: 2px 6px; font-weight: 600; }
+
+/* ── EDITOR PAGE ── */
+.editor-layout { display: grid; grid-template-columns: 220px 1fr; gap: 20px; min-height: 60vh; }
+.editor-menu { background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+.editor-menu h3 { font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 8px 6px; }
+.editor-menu-item { padding: 9px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; color: #374151; transition: background 0.15s; }
+.editor-menu-item:hover { background: #f1f5f9; }
+.editor-menu-item.active { background: linear-gradient(135deg, var(--g1), var(--g2)); color: #fff; font-weight: 600; }
+.editor-panel { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+.editor-panel h2 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; color: #1e293b; }
+.month-selector { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.month-selector label { font-size: 0.85rem; font-weight: 600; color: #374151; }
+.month-selector select, .month-selector input { padding: 7px 12px; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 0.85rem; outline: none; }
+.month-selector select:focus, .month-selector input:focus { border-color: var(--g1); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group label { font-size: 0.78rem; font-weight: 600; color: #374151; }
+.form-group input, .form-group textarea { padding: 8px 10px; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 0.85rem; outline: none; transition: border-color 0.15s; }
+.form-group input:focus, .form-group textarea:focus { border-color: var(--g1); }
+.form-section-title { font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px; grid-column: 1/-1; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+.btn-primary { background: linear-gradient(135deg, var(--g1), var(--g2)); color: #fff; border: none; padding: 10px 24px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-top: 16px; transition: opacity 0.15s; }
+.btn-primary:hover { opacity: 0.88; }
+.btn-secondary { background: #f1f5f9; color: #374151; border: 1.5px solid #d1d5db; padding: 10px 20px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-top: 16px; margin-left: 8px; }
+.saved-msg { color: #16a34a; font-size: 0.82rem; font-weight: 600; display: none; margin-left: 12px; margin-top: 18px; }
+
+/* COUNTRY TABLE EDITOR */
+.tbl-editor { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.tbl-editor th { background: #f8fafc; padding: 7px 8px; text-align: left; font-size: 0.73rem; font-weight: 700; color: #64748b; border-bottom: 2px solid #e2e8f0; }
+.tbl-editor td { padding: 5px 6px; border-bottom: 1px solid #f1f5f9; }
+.tbl-editor input { width: 100%; padding: 4px 6px; border: 1px solid #e2e8f0; border-radius: 5px; font-size: 0.78rem; }
+.tbl-editor input:focus { outline: none; border-color: var(--g1); }
+.tbl-editor .del-btn { background: #fee2e2; color: #dc2626; border: none; border-radius: 5px; padding: 3px 8px; cursor: pointer; font-size: 0.72rem; }
+.add-row-btn { background: #f0fdf4; color: #16a34a; border: 1.5px dashed #16a34a; padding: 6px 16px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; margin-top: 10px; font-weight: 600; }
+
+/* ── YTD PAGE ── */
+.ytd-controls { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+.ytd-controls label { font-size: 0.85rem; font-weight: 600; }
+.ytd-controls select { padding: 7px 12px; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 0.85rem; outline: none; }
+.ytd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.ytd-chart-card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+.ytd-chart-card h3 { font-size: 0.88rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; }
+.chart-container { position: relative; width: 100%; }
+svg.line-chart { width: 100%; height: 160px; }
+.chart-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.72rem; color: #475569; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* MONTH DATA TABLE */
+.month-data-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+.month-data-table th { background: linear-gradient(90deg, var(--g1), var(--g2)); color: #fff; padding: 7px 10px; text-align: center; font-size: 0.73rem; font-weight: 700; }
+.month-data-table td { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; text-align: center; }
+.month-data-table tr:nth-child(even) td { background: rgba(124,58,237,0.04); }
+.month-data-table td:first-child { text-align: left; font-weight: 600; }
+
+/* section title color adapts */
+.sec-cap { color: #7c3aed; border-color: #7c3aed; }
+.sec-ful { color: #0891b2; border-color: #0891b2; }
+.sec-per { color: #6d28d9; border-color: #6d28d9; }
+
+/* Header band */
+.section-band { background: linear-gradient(90deg, var(--g1), var(--g2)); border-radius: 10px; padding: 10px 18px; color: #fff; font-size: 0.95rem; font-weight: 700; margin-bottom: 14px; }
+
+/* Responsive */
+@media(max-width: 768px) {
+  .cap-grid { grid-template-columns: 1fr; }
+  .fulfill-grid, .di-grid, .pac-grid, .ppm-top-grid, .util-grid { grid-template-columns: 1fr; }
+  .ytd-grid { grid-template-columns: 1fr; }
+  .editor-layout { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <h1>&#128202; Workforce Dashboard 2026</h1>
+  <nav class="nav-tabs">
+    <div class="nav-tab active" onclick="showPage('dashboard')">&#128201; Dashboard</div>
+    <div class="nav-tab" onclick="showPage('editor')">&#9998; Data Editor</div>
+    <div class="nav-tab" onclick="showPage('ytd')">&#128200; YTD Trends</div>
+  </nav>
+  <div class="theme-picker">
+    <span>Theme:</span>
+    <div class="theme-dot active" style="background:linear-gradient(135deg,#7c3aed,#06b6d4)" title="Purple-Cyan" onclick="setTheme('#7c3aed','#06b6d4','#a855f7',this)"></div>
+    <div class="theme-dot" style="background:linear-gradient(135deg,#1d4ed8,#06b6d4)" title="Blue-Cyan" onclick="setTheme('#1d4ed8','#06b6d4','#3b82f6',this)"></div>
+    <div class="theme-dot" style="background:linear-gradient(135deg,#059669,#06b6d4)" title="Green-Cyan" onclick="setTheme('#059669','#06b6d4','#10b981',this)"></div>
+    <div class="theme-dot" style="background:linear-gradient(135deg,#dc2626,#f97316)" title="Red-Orange" onclick="setTheme('#dc2626','#f97316','#ef4444',this)"></div>
+    <div class="theme-dot" style="background:linear-gradient(135deg,#0f172a,#334155)" title="Dark Slate" onclick="setTheme('#0f172a','#334155','#1e293b',this)"></div>
+    <div class="theme-dot" style="background:linear-gradient(135deg,#b45309,#fbbf24)" title="Amber" onclick="setTheme('#b45309','#fbbf24','#d97706',this)"></div>
+    <div class="theme-dot" style="background:linear-gradient(135deg,#be185d,#f472b6)" title="Pink" onclick="setTheme('#be185d','#f472b6','#ec4899',this)"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     PAGE 1 — DASHBOARD
+════════════════════════════════════════════════ -->
+<div class="page active" id="page-dashboard">
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+    <h2 style="font-size:1.4rem;font-weight:800;color:#1e293b;">Monthly Dashboard</h2>
+    <select id="dash-month-select" onchange="renderDashboard()" style="padding:7px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:0.85rem;outline:none;">
+      <option value="2026-08" selected>August 2026</option>
+    </select>
+  </div>
+
+  <!-- ── CAPACITY MANAGEMENT ── -->
+  <div class="section-wrap">
+    <div class="section-band" id="band-cap">&#128101; Capacity Management — <span id="cap-month-label">August 2026</span></div>
+    <div class="cap-grid">
+      <!-- Headcount -->
+      <div class="grad-card cap-headcount" id="card-headcount">
+        <div class="label">Headcount Dynamics</div>
+        <div style="display:flex;align-items:center;gap:12px;margin:10px 0;">
+          <div class="big-num" id="hc-value">22,494</div>
+          <div style="font-size:2.5rem;opacity:0.5;">&#128101;</div>
+        </div>
+        <hr style="border-color:rgba(255,255,255,0.3);margin:8px 0;">
+        <div class="sub" id="hc-mtm">-2.36% MtM</div>
+        <div class="sub" id="hc-yty">-0.20% YtY</div>
+        <div class="source">Source Data: WF360</div>
+      </div>
+      <!-- Band Mix + LCC -->
+      <div class="cap-mid">
+        <div class="band-card">
+          <div class="metric-label">Band Mix</div>
+          <div class="metric-val" id="bm-value">4.66</div>
+          <div class="metric-sub" id="bm-mtm-yty">0.01 MtM | -0.02 YtY</div>
+          <div class="metric-note">Source Data: Score</div>
+        </div>
+        <div class="band-card">
+          <div class="metric-label">Low-Cost Center Hires</div>
+          <div class="metric-val" id="lcc-value">72.50%</div>
+          <div class="metric-sub">Hires in Low-Cost Centers</div>
+          <div class="metric-sub" id="lcc-mtm-yty">-14.86% MtM | +1.13% YtY</div>
+          <div class="metric-note">Limited hiring in low-cost centers due to freeze.</div>
+        </div>
+      </div>
+      <!-- Hiring Metrics -->
+      <div class="grad-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div style="font-size:1.1rem;font-weight:800;">HIRING METRICS</div>
+          <div style="font-size:1.8rem;opacity:0.6;">&#128202;</div>
+        </div>
+        <div class="hiring-flow" style="margin:10px 0;">
+          <div class="flow-title">Hiring Metrics Aug '26 (Average in Days)</div>
+          <div class="flow-box">Submitted to Onboard: <strong id="hm-sto">69.57</strong></div>
+          <div class="flow-row">
+            <div class="flow-sub-box">Submitted to Approval: <strong id="hm-sta">17.22</strong></div>
+            <div class="flow-sub-box">Approval to Onboard: <strong id="hm-ato">52.35</strong></div>
+          </div>
+        </div>
+        <div class="hiring-stats">
+          <div><strong>Submitted to Onboard</strong> <span id="hm-sto-pct">11.40% MtM | 17.69% YtY</span></div>
+          <div><strong>Submitted to Approval</strong> <span id="hm-sta-pct">16.98% MtM | 9.74% YtY</span></div>
+          <div><strong>Approval to Onboard</strong> <span id="hm-ato-pct">9.68% MtM | 7.95% YtY</span></div>
+          <div style="font-style:italic;margin-top:4px;opacity:0.8;font-size:0.72rem;" id="hm-note">Driven by hiring freeze</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FULFILLMENT ── -->
+  <div class="section-wrap">
+    <div class="section-band">&#9989; Fulfillment Management — <span id="ful-month-label">August 2026</span></div>
+    <!-- BO Fill Rate -->
+    <div class="fulfill-grid" style="margin-bottom:16px;">
+      <div class="fill-rate-card">
+        <div class="fr-header">BO Fill Rate</div>
+        <div id="fr-prev-month-label" style="font-size:0.82rem;opacity:0.85;">July 2026</div>
+        <div class="fr-big" id="fr-prev">99.3%</div>
+        <div class="fill-gauges">
+          <div class="gauge-wrap"><svg class="gauge" width="70" height="40" viewBox="0 0 70 40"><path d="M5 38 A30 30 0 0 1 65 38" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="7" stroke-linecap="round"/><path id="g-prev-apac" d="M5 38 A30 30 0 0 1 65 38" fill="none" stroke="#10b981" stroke-width="7" stroke-linecap="round" stroke-dasharray="94.2 94.2" stroke-dashoffset="0.5"/></svg><div class="gauge-val" id="gv-prev-apac">99.2%</div><div class="gauge-label">APAC/Japan</div></div>
+          <div class="gauge-wrap"><svg class="gauge" width="70" height="40" viewBox="0 0 70 40"><path d="M5 38 A30 30 0 0 1 65 38" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="7" stroke-linecap="round"/><path d="M5 38 A30 30 0 0 1 65 38" fill="none" stroke="#10b981" stroke-width="7" stroke-linecap="round" stroke-dasharray="94.2 94.2" stroke-dashoffset="0"/></svg><div class="gauge-val" id="gv-prev-am">100%</div><div class="gauge-label">Americas</div></div>
+          <div class="gauge-wrap"><svg class="gauge" width="70" height="40" viewBox="0 0 70 40"><path d="M5 38 A30 30 0 0 1 65 38" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="7" stroke-linecap="round"/><path d="M5 38 A30 30 0 0 1 65 38" fill="none" stroke="#10b981" stroke-width="7" stroke-linecap="round" stroke-dasharray="94.2 94.2" stroke-dashoffset="0"/></svg><div class="gauge-val" id="gv-prev-emea">100%</div><div class="gauge-label">EMEA</div></div>
+        </div>
+      </div>
+      <div class="fill-rate-card">
+        <div class="fr-header">BO Fill Rate</div>
+        <div id="fr-cur-month-label" style="font-size:0.82rem;opacity:0.85;">August 2026</div>
+        <div class="fr-big" id="fr-cur">100%</div>
+        <div class="fill-gauges">
+          <div class="gauge-wrap"><svg class="gauge" width="70" height="40" viewBox="0 0 70 40"><path d="M5 38 A30 30 0 0 1 65 38" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="7" stroke-linecap="round"/><path d="M5 38 A30 30 0 0 1 65 38" fill="none" stroke="#10b981" stroke-width="7" stroke-linecap="round" stroke-dasharray="94.2 94.2" stroke-dashoffset="0"/></svg><div class="gauge-val" id="gv-cur-apac">100%</div><div class="gauge-label">APAC/Japan</div></div>
+          <div class="gauge-wrap"><svg class="gauge" width="70" height="40" viewBox="0 0 70 40"><path d="M5 38 A30 30 0 0 1 65 38" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="7" stroke-linecap="round"/><path d="M5 38 A30 30 0 0 1 65 38" fill="none" stroke="#10b981" stroke-width="7" stroke-linecap="round" stroke-dasharray="94.2 94.2" stroke-dashoffset="0"/></svg><div class="gauge-val" id="gv-cur-am">100%</div><div class="gauge-label">Americas</div></div>
+          <div class="gauge-wrap"><svg class="gauge" width="70" height="40" viewBox="0 0 70 40"><path d="M5 38 A30 30 0 0 1 65 38" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="7" stroke-linecap="round"/><path d="M5 38 A30 30 0 0 1 65 38" fill="none" stroke="#10b981" stroke-width="7" stroke-linecap="round" stroke-dasharray="94.2 94.2" stroke-dashoffset="0"/></svg><div class="gauge-val" id="gv-cur-emea">100%</div><div class="gauge-label">EMEA</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- DI Issues -->
+    <div class="section-band">&#9888;&#65039; DI Issues — <span id="di-month-label">August 2026</span></div>
+    <div class="di-grid" style="margin-top:12px;">
+      <div class="di-card light-card">
+        <div class="di-label">JRS Not Valid Cases</div>
+        <div class="di-num" id="di-jrs-nv">359</div>
+        <hr class="di-divider">
+        <div class="di-sub">weight vs. full population</div>
+        <div class="di-pct" id="di-jrs-nv-pct">1.6%</div>
+      </div>
+      <div class="di-card light-card">
+        <div class="di-label">On Bench Cases</div>
+        <div class="di-num" id="di-bench">120</div>
+        <hr class="di-divider">
+        <div class="di-sub">weight vs. full population</div>
+        <div class="di-pct" id="di-bench-pct">0.6%</div>
+      </div>
+      <div class="di-card light-card">
+        <div class="di-label">JRS Service Mismatch Cases</div>
+        <div class="di-num" id="di-jrs-sm">571</div>
+        <hr class="di-divider">
+        <div class="di-sub">weight vs. full population</div>
+        <div class="di-pct" id="di-jrs-sm-pct">2.6%</div>
+      </div>
+      <div class="di-card light-card">
+        <div style="font-weight:600;color:#334155;margin-bottom:6px;">Upcoming Bench Cases</div>
+        <div class="di-split">
+          <div class="di-split-item">
+            <div style="font-size:0.7rem;color:#64748b;">(1-30 days)</div>
+            <div class="di-num" id="di-ub-30">120</div>
+            <hr class="di-divider">
+            <div class="di-pct" id="di-ub-30-pct">0.6%</div>
+            <div style="font-size:0.68rem;color:#64748b;">vs. full population</div>
+          </div>
+          <div class="di-split-item">
+            <div style="font-size:0.7rem;color:#64748b;">(31-90 days)</div>
+            <div class="di-num" id="di-ub-90">725</div>
+            <hr class="di-divider">
+            <div class="di-pct" id="di-ub-90-pct">3.3%</div>
+            <div style="font-size:0.68rem;color:#64748b;">vs. full population</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PERFORMANCE ── -->
+  <div class="section-wrap">
+    <div class="section-band">&#127775; Workforce Performance — <span id="perf-month-label">August 2026</span></div>
+
+    <!-- Professional Accountability -->
+    <div class="section-band" style="background:rgba(124,58,237,0.15);color:#1e293b;margin-bottom:14px;">
+      Professional Accountability Metrics (<span id="pac-date">09/04/2026</span>)
+    </div>
+    <div class="pac-grid" style="margin-bottom:20px;">
+      <div class="pac-overall grad-card" style="text-align:center;display:flex;flex-direction:column;justify-content:center;">
+        <div class="ov-label">Overall</div>
+        <div class="pac-overall-inner">
+          <div class="ov-big" id="pac-overall">69.2%</div>
+        </div>
+      </div>
+      <div class="pac-metrics-grid">
+        <div class="pac-metric">
+          <div class="pm-icon">&#128196;</div>
+          <div><div class="pm-label">CV Compliance</div><div class="pm-val" id="pac-cv">73.2%</div></div>
+        </div>
+        <div class="pac-metric">
+          <div class="pm-icon">&#128336;</div>
+          <div><div class="pm-label">Timely Claim</div><div class="pm-val" id="pac-tc">97.8%</div></div>
+        </div>
+        <div class="pac-metric">
+          <div class="pm-icon">&#128197;</div>
+          <div><div class="pm-label">Hours Plan</div><div class="pm-val" id="pac-hp">78.3%</div></div>
+        </div>
+        <div class="pac-metric">
+          <div class="pm-icon">&#9881;&#65039;</div>
+          <div><div class="pm-label">JRS &amp; Skills</div><div class="pm-val" id="pac-jrs">27.6%</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Country Compliance Table -->
+    <div style="overflow-x:auto;margin-bottom:20px;">
+      <table class="data-table" id="compliance-table">
+        <thead><tr>
+          <th>Country</th><th>HC Count</th><th>CV Compliance</th><th>Timely Claim</th><th>Hours Plan</th><th>JRS &amp; Skills</th><th>Overall</th>
+        </tr></thead>
+        <tbody id="compliance-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- PPM -->
+    <div class="section-band" style="background:rgba(124,58,237,0.15);color:#1e293b;margin-bottom:14px;">
+      PPM (<span id="ppm-date">08/18/2026</span>)
+    </div>
+    <div class="ppm-top-grid">
+      <div class="light-card">
+        <div class="ppm-big" id="ppm-practitioners">222</div>
+        <div class="ppm-sub">practitioners</div>
+        <hr style="border:none;border-top:1.5px solid rgba(0,0,0,0.1);margin:8px 0;">
+        <div class="ppm-pct-sub" id="ppm-pct">1.01%</div>
+        <div class="ppm-sub">of total HC*</div>
+        <div class="ppm-sub" id="ppm-hc-note">*21,982 FTEs</div>
+      </div>
+      <div class="light-card" style="text-align:center;">
+        <div class="ppm-icon">&#128203;</div>
+        <div class="ppm-sub">Monitor-Recent Assignment</div>
+        <div class="ppm-big" id="ppm-mra">42%</div>
+      </div>
+      <div class="light-card" style="text-align:center;">
+        <div class="ppm-icon">&#9881;&#65039;</div>
+        <div class="ppm-sub">Reskill / Upskill / Cross-skill (Bench)</div>
+        <div class="ppm-big" id="ppm-reskill">27.5%</div>
+      </div>
+    </div>
+
+    <!-- PPM Country Table -->
+    <div style="overflow-x:auto;margin-top:16px;margin-bottom:20px;">
+      <table class="data-table" id="ppm-table">
+        <thead><tr>
+          <th>Country</th><th>Monitor-Recent Assignment</th><th>Reskill/Upskill/Cross-skill</th><th>Address Data Hygiene</th><th>Initiate Alt. Solution</th><th>Monitor-Leaving IBM</th><th>Other</th><th>Total</th>
+        </tr></thead>
+        <tbody id="ppm-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Utilization -->
+    <div class="section-band" style="background:rgba(124,58,237,0.15);color:#1e293b;margin-bottom:14px;">
+      Utilization August (<span id="util-date">09/04/2026</span>)
+    </div>
+    <div class="util-grid">
+      <div class="util-main">
+        <div class="u-label">QTD CU</div>
+        <div class="u-big" id="util-qtd">94.9%</div>
+        <div class="u-sub" id="util-delta">Delta 1.3%. Forecast vs QE Target (QE PV) -0.3%</div>
+      </div>
+      <div class="util-sub-grid">
+        <div class="util-metric"><div class="um-icon">&#128336;</div><div><div class="um-label">Missing Claim</div><div class="um-val" id="util-mc">0.3%</div></div></div>
+        <div class="util-metric"><div class="um-icon">&#9203;</div><div><div class="um-label">AAID</div><div class="um-val" id="util-aaid">0.0%</div></div></div>
+        <div class="util-metric"><div class="um-icon">&#128336;</div><div><div class="um-label">Idle-Time</div><div class="um-val" id="util-idle">0.0%</div></div></div>
+        <div class="util-metric"><div class="um-icon">&#128218;</div><div><div class="um-label">Learning</div><div class="um-val" id="util-learn">0.7%</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     PAGE 2 — EDITOR
+════════════════════════════════════════════════ -->
+<div class="page" id="page-editor">
+  <h2 style="font-size:1.2rem;font-weight:800;margin-bottom:16px;">&#9998; Data Editor</h2>
+  <div class="month-selector">
+    <label>Month:</label>
+    <select id="editor-year">
+      <option value="2026" selected>2026</option>
+      <option value="2025">2025</option>
+    </select>
+    <select id="editor-month">
+      <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+      <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+      <option value="7">July</option><option value="8" selected>August</option><option value="9">September</option>
+      <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+    </select>
+    <button class="btn-primary" style="margin-top:0;" onclick="loadEditorData()">Load</button>
+  </div>
+  <div class="editor-layout">
+    <div class="editor-menu">
+      <h3>Sections</h3>
+      <div class="editor-menu-item active" onclick="showEditorSection('capacity',this)">&#128101; Capacity Mgmt</div>
+      <div class="editor-menu-item" onclick="showEditorSection('fulfillment',this)">&#9989; Fulfillment</div>
+      <div class="editor-menu-item" onclick="showEditorSection('di_issues',this)">&#9888;&#65039; DI Issues</div>
+      <div class="editor-menu-item" onclick="showEditorSection('pac',this)">&#127775; Prof. Accountability</div>
+      <div class="editor-menu-item" onclick="showEditorSection('compliance',this)">&#127760; Country Compliance</div>
+      <div class="editor-menu-item" onclick="showEditorSection('ppm',this)">&#128203; PPM</div>
+      <div class="editor-menu-item" onclick="showEditorSection('ppm_countries',this)">&#127760; PPM Countries</div>
+      <div class="editor-menu-item" onclick="showEditorSection('utilization',this)">&#128200; Utilization</div>
+    </div>
+    <div class="editor-panel" id="editor-content">
+      <!-- Filled by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     PAGE 3 — YTD TRENDS
+════════════════════════════════════════════════ -->
+<div class="page" id="page-ytd">
+  <h2 style="font-size:1.2rem;font-weight:800;margin-bottom:16px;">&#128200; Year-to-Date Trends</h2>
+  <div class="ytd-controls">
+    <label>Year:</label>
+    <select id="ytd-year" onchange="renderYTD()">
+      <option value="2026" selected>2026</option>
+      <option value="2025">2025</option>
+    </select>
+  </div>
+  <div class="ytd-grid" id="ytd-grid"></div>
+  <div style="margin-top:24px;">
+    <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:12px;">Monthly Data Summary</h3>
+    <div style="overflow-x:auto;">
+      <table class="month-data-table" id="ytd-summary-table">
+        <thead><tr id="ytd-table-head"></tr></thead>
+        <tbody id="ytd-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ══════════════════════════════════════════════════
+//  DATA STORE  (persisted in localStorage)
+// ══════════════════════════════════════════════════
+const STORE_KEY = 'wf_dashboard_data';
+
+const defaultData = {
+  "2026-08": {
+    capacity: {
+      hc_value:"22,494", hc_mtm:"-2.36% MtM", hc_yty:"-0.20% YtY",
+      bm_value:"4.66", bm_mtm_yty:"0.01 MtM | -0.02 YtY",
+      lcc_value:"72.50%", lcc_mtm_yty:"-14.86% MtM | +1.13% YtY",
+      hm_sto:"69.57", hm_sta:"17.22", hm_ato:"52.35",
+      hm_sto_pct:"11.40% MtM | 17.69% YtY",
+      hm_sta_pct:"16.98% MtM | 9.74% YtY",
+      hm_ato_pct:"9.68% MtM | 7.95% YtY",
+      hm_note:"Driven by hiring freeze"
+    },
+    fulfillment: {
+      fr_prev:"99.3%", fr_prev_label:"July 2026",
+      fr_prev_apac:"99.2%", fr_prev_am:"100%", fr_prev_emea:"100%",
+      fr_cur:"100%", fr_cur_label:"August 2026",
+      fr_cur_apac:"100%", fr_cur_am:"100%", fr_cur_emea:"100%"
+    },
+    di_issues: {
+      jrs_nv:"359", jrs_nv_pct:"1.6%",
+      bench:"120", bench_pct:"0.6%",
+      jrs_sm:"571", jrs_sm_pct:"2.6%",
+      ub_30:"120", ub_30_pct:"0.6%",
+      ub_90:"725", ub_90_pct:"3.3%"
+    },
+    pac: {
+      date:"09/04/2026",
+      overall:"69.2%", cv:"73.2%", tc:"97.8%", hp:"78.3%", jrs:"27.6%"
+    },
+    compliance: [
+      {country:"India",         hc:10586, cv:56.6, tc:98.0, hp:80.6, jrs:11.5, ov:61.7},
+      {country:"Philippines",   hc:4737,  cv:94.1, tc:99.7, hp:76.2, jrs:14.1, ov:71.0},
+      {country:"Brazil",        hc:1315,  cv:99.8, tc:99.8, hp:90.4, jrs:97.2, ov:96.8},
+      {country:"Poland",        hc:1242,  cv:81.2, tc:99.0, hp:60.9, jrs:22.6, ov:65.9},
+      {country:"China Onshore", hc:1152,  cv:95.1, tc:99.7, hp:89.6, jrs:93.4, ov:94.5},
+      {country:"Colombia",      hc:721,   cv:100.0,tc:100.0,hp:89.5, jrs:98.0, ov:96.9},
+      {country:"United States", hc:419,   cv:95.5, tc:91.2, hp:76.5, jrs:77.1, ov:85.1},
+      {country:"Mexico",        hc:244,   cv:99.6, tc:100.0,hp:96.3, jrs:85.1, ov:95.2},
+      {country:"Costa Rica",    hc:168,   cv:100.0,tc:100.0,hp:94.4, jrs:100.0,ov:98.6},
+      {country:"Malaysia",      hc:140,   cv:79.9, tc:100.0,hp:63.4, jrs:3.0,  ov:61.6},
+      {country:"Hungary",       hc:122,   cv:88.3, tc:98.1, hp:60.2, jrs:17.5, ov:66.0},
+      {country:"Argentina",     hc:107,   cv:98.1, tc:99.0, hp:84.3, jrs:67.6, ov:87.3},
+      {country:"Other Countries",hc:1029, cv:38.3, tc:80.2, hp:41.8, jrs:6.1,  ov:41.6},
+      {country:"Grand Total",   hc:21982, cv:73.2, tc:97.8, hp:78.3, jrs:27.6, ov:69.2}
+    ],
+    ppm: {
+      date:"08/18/2026",
+      practitioners:"222", pct:"1.01%", hc_note:"*21,982 FTEs",
+      mra:"42%", reskill:"27.5%"
+    },
+    ppm_countries: [
+      {country:"India",          mra:50, reskill:14, adh:8,  alt:10, leaving:1,  other:0,  total:83},
+      {country:"Philippines",    mra:13, reskill:3,  adh:0,  alt:0,  leaving:2,  other:0,  total:18},
+      {country:"China Onshore",  mra:0,  reskill:37, adh:0,  alt:0,  leaving:0,  other:1,  total:38},
+      {country:"Poland",         mra:21, reskill:0,  adh:3,  alt:0,  leaving:0,  other:0,  total:24},
+      {country:"Brazil",         mra:1,  reskill:0,  adh:11, alt:0,  leaving:0,  other:5,  total:17},
+      {country:"United States",  mra:5,  reskill:3,  adh:0,  alt:1,  leaving:0,  other:8,  total:17},
+      {country:"Other Centers",  mra:1,  reskill:3,  adh:0,  alt:0,  leaving:0,  other:13, total:17},
+      {country:"Colombia",       mra:0,  reskill:0,  adh:0,  alt:0,  leaving:0,  other:3,  total:3},
+      {country:"Argentina",      mra:0,  reskill:1,  adh:0,  alt:0,  leaving:1,  other:0,  total:2},
+      {country:"Hungary",        mra:2,  reskill:0,  adh:0,  alt:0,  leaving:0,  other:0,  total:2},
+      {country:"Costa Rica",     mra:0,  reskill:0,  adh:0,  alt:0,  leaving:0,  other:1,  total:1},
+      {country:"Malaysia",       mra:0,  reskill:0,  adh:0,  alt:0,  leaving:0,  other:0,  total:0},
+      {country:"TOTAL",          mra:93, reskill:61, adh:22, alt:11, leaving:4,  other:31, total:222}
+    ],
+    utilization: {
+      date:"09/04/2026",
+      qtd:"94.9%", delta:"Delta 1.3%. Forecast vs QE Target (QE PV) -0.3%",
+      mc:"0.3%", aaid:"0.0%", idle:"0.0%", learn:"0.7%"
+    }
+  }
+};
+
+function loadStore() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || JSON.parse(JSON.stringify(defaultData)); }
+  catch(e) { return JSON.parse(JSON.stringify(defaultData)); }
+}
+function saveStore(data) { localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
+
+let store = loadStore();
+// Merge missing months from default
+Object.keys(defaultData).forEach(k => { if (!store[k]) store[k] = defaultData[k]; });
+saveStore(store);
+
+// ══════════════════════════════════════════════════
+//  THEME
+// ══════════════════════════════════════════════════
+function setTheme(c1, c2, c3, el) {
+  document.documentElement.style.setProperty('--g1', c1);
+  document.documentElement.style.setProperty('--g2', c2);
+  document.documentElement.style.setProperty('--g3', c3);
+  document.querySelectorAll('.theme-dot').forEach(d => d.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderDashboard();
+  renderYTD();
+}
+
+// ══════════════════════════════════════════════════
+//  PAGE NAVIGATION
+// ══════════════════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if(name==='ytd') renderYTD();
+  if(name==='editor') { loadEditorData(); showEditorSection('capacity', document.querySelector('.editor-menu-item')); }
+}
+
+// ══════════════════════════════════════════════════
+//  MONTH KEY HELPERS
+// ══════════════════════════════════════════════════
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function mkKey(y,m) { return y+'-'+String(m).padStart(2,'0'); }
+function keyLabel(key) {
+  const [y,m] = key.split('-');
+  return MONTHS[parseInt(m)-1]+' '+y;
+}
+
+function updateDashMonthSelect() {
+  const sel = document.getElementById('dash-month-select');
+  const existing = Array.from(sel.options).map(o=>o.value);
+  Object.keys(store).sort().forEach(k => {
+    if(!existing.includes(k)) {
+      const opt = document.createElement('option');
+      opt.value = k; opt.text = keyLabel(k);
+      sel.appendChild(opt);
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  RENDER DASHBOARD
+// ══════════════════════════════════════════════════
+function renderDashboard() {
+  updateDashMonthSelect();
+  const key = document.getElementById('dash-month-select').value;
+  const d = store[key];
+  if(!d) { alert('No data for '+keyLabel(key)); return; }
+  const lbl = keyLabel(key);
+
+  // Labels
+  ['cap-month-label','ful-month-label','di-month-label','perf-month-label'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=lbl; });
+
+  // Capacity
+  const c = d.capacity||{};
+  setText('hc-value', c.hc_value); setText('hc-mtm', c.hc_mtm); setText('hc-yty', c.hc_yty);
+  setText('bm-value', c.bm_value); setText('bm-mtm-yty', c.bm_mtm_yty);
+  setText('lcc-value', c.lcc_value); setText('lcc-mtm-yty', c.lcc_mtm_yty);
+  setText('hm-sto', c.hm_sto); setText('hm-sta', c.hm_sta); setText('hm-ato', c.hm_ato);
+  setText('hm-sto-pct', c.hm_sto_pct); setText('hm-sta-pct', c.hm_sta_pct); setText('hm-ato-pct', c.hm_ato_pct);
+  setText('hm-note', c.hm_note);
+
+  // Fulfillment
+  const f = d.fulfillment||{};
+  setText('fr-prev-month-label', f.fr_prev_label); setText('fr-prev', f.fr_prev);
+  setText('gv-prev-apac', f.fr_prev_apac); setText('gv-prev-am', f.fr_prev_am); setText('gv-prev-emea', f.fr_prev_emea);
+  setText('fr-cur-month-label', f.fr_cur_label); setText('fr-cur', f.fr_cur);
+  setText('gv-cur-apac', f.fr_cur_apac); setText('gv-cur-am', f.fr_cur_am); setText('gv-cur-emea', f.fr_cur_emea);
+
+  // DI Issues
+  const di = d.di_issues||{};
+  setText('di-jrs-nv', di.jrs_nv); setText('di-jrs-nv-pct', di.jrs_nv_pct);
+  setText('di-bench', di.bench); setText('di-bench-pct', di.bench_pct);
+  setText('di-jrs-sm', di.jrs_sm); setText('di-jrs-sm-pct', di.jrs_sm_pct);
+  setText('di-ub-30', di.ub_30); setText('di-ub-30-pct', di.ub_30_pct);
+  setText('di-ub-90', di.ub_90); setText('di-ub-90-pct', di.ub_90_pct);
+
+  // PAC
+  const p = d.pac||{};
+  setText('pac-date', p.date); setText('pac-overall', p.overall);
+  setText('pac-cv', p.cv); setText('pac-tc', p.tc); setText('pac-hp', p.hp); setText('pac-jrs', p.jrs);
+
+  // Compliance table
+  renderComplianceTable(d.compliance||[]);
+
+  // PPM
+  const pm = d.ppm||{};
+  setText('ppm-date', pm.date); setText('ppm-practitioners', pm.practitioners);
+  setText('ppm-pct', pm.pct); setText('ppm-hc-note', pm.hc_note);
+  setText('ppm-mra', pm.mra); setText('ppm-reskill', pm.reskill);
+
+  // PPM countries table
+  renderPPMTable(d.ppm_countries||[]);
+
+  // Utilization
+  const u = d.utilization||{};
+  setText('util-date', u.date); setText('util-qtd', u.qtd); setText('util-delta', u.delta);
+  setText('util-mc', u.mc); setText('util-aaid', u.aaid); setText('util-idle', u.idle); setText('util-learn', u.learn);
+}
+
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if(el && val !== undefined && val !== null) el.textContent = val;
+}
+
+function cellClass(val) {
+  const v = parseFloat(val);
+  if(isNaN(v)) return '';
+  if(v >= 95) return 'cell-green';
+  if(v >= 70) return 'cell-yellow';
+  return 'cell-red';
+}
+
+function renderComplianceTable(rows) {
+  const tbody = document.getElementById('compliance-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = rows.map(r => {
+    const isTotal = r.country==='Grand Total';
+    return `<tr class="${isTotal?'total-row':''}">
+      <td>${r.country}</td>
+      <td>${r.hc?r.hc.toLocaleString():''}</td>
+      <td><span class="${isTotal?'':''+cellClass(r.cv)}">${r.cv}%</span></td>
+      <td><span class="${isTotal?'':''+cellClass(r.tc)}">${r.tc}%</span></td>
+      <td><span class="${isTotal?'':''+cellClass(r.hp)}">${r.hp}%</span></td>
+      <td><span class="${isTotal?'':''+cellClass(r.jrs)}">${r.jrs}%</span></td>
+      <td><span class="${isTotal?'cell-grey':''+cellClass(r.ov)}">${r.ov}%</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPPMTable(rows) {
+  const tbody = document.getElementById('ppm-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = rows.map(r => {
+    const isTotal = r.country==='TOTAL';
+    const fmt = v => (v===0||v==='—'||!v) ? '—' : v;
+    return `<tr class="${isTotal?'total-row':''}">
+      <td>${r.country}</td>
+      <td>${fmt(r.mra)}</td><td>${fmt(r.reskill)}</td>
+      <td>${fmt(r.adh)}</td><td>${fmt(r.alt)}</td>
+      <td>${fmt(r.leaving)}</td><td>${fmt(r.other)}</td>
+      <td><strong>${r.total}</strong></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+//  EDITOR
+// ══════════════════════════════════════════════════
+let currentEditorSection = 'capacity';
+let currentEditorKey = '2026-08';
+
+function loadEditorData() {
+  const y = document.getElementById('editor-year').value;
+  const m = document.getElementById('editor-month').value;
+  currentEditorKey = mkKey(y, m);
+  if(!store[currentEditorKey]) {
+    store[currentEditorKey] = JSON.parse(JSON.stringify(defaultData['2026-08']));
+    store[currentEditorKey].capacity.hc_value = '';
+    saveStore(store);
+  }
+  showEditorSection(currentEditorSection, null);
+  updateDashMonthSelect();
+}
+
+function showEditorSection(section, clickedEl) {
+  currentEditorSection = section;
+  if(clickedEl) {
+    document.querySelectorAll('.editor-menu-item').forEach(i=>i.classList.remove('active'));
+    clickedEl.classList.add('active');
+  }
+  const d = store[currentEditorKey] || {};
+  const panel = document.getElementById('editor-content');
+  panel.innerHTML = buildEditorSection(section, d);
+}
+
+function buildEditorSection(section, d) {
+  const monthLabel = keyLabel(currentEditorKey);
+  let html = `<h2>${monthLabel}</h2>`;
+
+  if(section==='capacity') {
+    const c = d.capacity||{};
+    html += `<div class="form-grid">
+      <div class="form-section-title">Headcount Dynamics</div>
+      <div class="form-group"><label>HC Value</label><input id="f-hc-value" value="${c.hc_value||''}"></div>
+      <div class="form-group"><label>MtM</label><input id="f-hc-mtm" value="${c.hc_mtm||''}"></div>
+      <div class="form-group"><label>YtY</label><input id="f-hc-yty" value="${c.hc_yty||''}"></div>
+      <div class="form-section-title">Band Mix</div>
+      <div class="form-group"><label>Band Mix Value</label><input id="f-bm-value" value="${c.bm_value||''}"></div>
+      <div class="form-group"><label>MtM | YtY</label><input id="f-bm-mtm-yty" value="${c.bm_mtm_yty||''}"></div>
+      <div class="form-section-title">Low-Cost Center Hires</div>
+      <div class="form-group"><label>LCC % Value</label><input id="f-lcc-value" value="${c.lcc_value||''}"></div>
+      <div class="form-group"><label>MtM | YtY</label><input id="f-lcc-mtm-yty" value="${c.lcc_mtm_yty||''}"></div>
+      <div class="form-section-title">Hiring Metrics (Average Days)</div>
+      <div class="form-group"><label>Submitted to Onboard</label><input id="f-hm-sto" value="${c.hm_sto||''}"></div>
+      <div class="form-group"><label>Submitted to Approval</label><input id="f-hm-sta" value="${c.hm_sta||''}"></div>
+      <div class="form-group"><label>Approval to Onboard</label><input id="f-hm-ato" value="${c.hm_ato||''}"></div>
+      <div class="form-group"><label>STO % MtM|YtY</label><input id="f-hm-sto-pct" value="${c.hm_sto_pct||''}"></div>
+      <div class="form-group"><label>STA % MtM|YtY</label><input id="f-hm-sta-pct" value="${c.hm_sta_pct||''}"></div>
+      <div class="form-group"><label>ATO % MtM|YtY</label><input id="f-hm-ato-pct" value="${c.hm_ato_pct||''}"></div>
+      <div class="form-group" style="grid-column:1/-1"><label>Note</label><input id="f-hm-note" value="${c.hm_note||''}"></div>
+    </div>
+    <button class="btn-primary" onclick="saveCapacity()">&#128190; Save</button><span class="saved-msg" id="saved-cap">&#10003; Saved!</span>`;
+  }
+
+  else if(section==='fulfillment') {
+    const f = d.fulfillment||{};
+    html += `<div class="form-grid">
+      <div class="form-section-title">Previous Month Fill Rate</div>
+      <div class="form-group"><label>Label (e.g. July 2026)</label><input id="f-fr-prev-label" value="${f.fr_prev_label||''}"></div>
+      <div class="form-group"><label>Fill Rate %</label><input id="f-fr-prev" value="${f.fr_prev||''}"></div>
+      <div class="form-group"><label>APAC/Japan %</label><input id="f-fr-prev-apac" value="${f.fr_prev_apac||''}"></div>
+      <div class="form-group"><label>Americas %</label><input id="f-fr-prev-am" value="${f.fr_prev_am||''}"></div>
+      <div class="form-group"><label>EMEA %</label><input id="f-fr-prev-emea" value="${f.fr_prev_emea||''}"></div>
+      <div class="form-section-title">Current Month Fill Rate</div>
+      <div class="form-group"><label>Label (e.g. August 2026)</label><input id="f-fr-cur-label" value="${f.fr_cur_label||''}"></div>
+      <div class="form-group"><label>Fill Rate %</label><input id="f-fr-cur" value="${f.fr_cur||''}"></div>
+      <div class="form-group"><label>APAC/Japan %</label><input id="f-fr-cur-apac" value="${f.fr_cur_apac||''}"></div>
+      <div class="form-group"><label>Americas %</label><input id="f-fr-cur-am" value="${f.fr_cur_am||''}"></div>
+      <div class="form-group"><label>EMEA %</label><input id="f-fr-cur-emea" value="${f.fr_cur_emea||''}"></div>
+    </div>
+    <button class="btn-primary" onclick="saveFulfillment()">&#128190; Save</button><span class="saved-msg" id="saved-ful">&#10003; Saved!</span>`;
+  }
+
+  else if(section==='di_issues') {
+    const di = d.di_issues||{};
+    html += `<div class="form-grid">
+      <div class="form-section-title">DI Issues</div>
+      <div class="form-group"><label>JRS Not Valid Cases</label><input id="f-jrs-nv" value="${di.jrs_nv||''}"></div>
+      <div class="form-group"><label>JRS NV Weight %</label><input id="f-jrs-nv-pct" value="${di.jrs_nv_pct||''}"></div>
+      <div class="form-group"><label>On Bench Cases</label><input id="f-bench" value="${di.bench||''}"></div>
+      <div class="form-group"><label>Bench Weight %</label><input id="f-bench-pct" value="${di.bench_pct||''}"></div>
+      <div class="form-group"><label>JRS Svc Mismatch Cases</label><input id="f-jrs-sm" value="${di.jrs_sm||''}"></div>
+      <div class="form-group"><label>Mismatch Weight %</label><input id="f-jrs-sm-pct" value="${di.jrs_sm_pct||''}"></div>
+      <div class="form-group"><label>Upcoming Bench 1-30d</label><input id="f-ub-30" value="${di.ub_30||''}"></div>
+      <div class="form-group"><label>1-30d %</label><input id="f-ub-30-pct" value="${di.ub_30_pct||''}"></div>
+      <div class="form-group"><label>Upcoming Bench 31-90d</label><input id="f-ub-90" value="${di.ub_90||''}"></div>
+      <div class="form-group"><label>31-90d %</label><input id="f-ub-90-pct" value="${di.ub_90_pct||''}"></div>
+    </div>
+    <button class="btn-primary" onclick="saveDI()">&#128190; Save</button><span class="saved-msg" id="saved-di">&#10003; Saved!</span>`;
+  }
+
+  else if(section==='pac') {
+    const p = d.pac||{};
+    html += `<div class="form-grid">
+      <div class="form-section-title">Professional Accountability</div>
+      <div class="form-group"><label>As-of Date</label><input id="f-pac-date" value="${p.date||''}"></div>
+      <div class="form-group"><label>Overall %</label><input id="f-pac-overall" value="${p.overall||''}"></div>
+      <div class="form-group"><label>CV Compliance %</label><input id="f-pac-cv" value="${p.cv||''}"></div>
+      <div class="form-group"><label>Timely Claim %</label><input id="f-pac-tc" value="${p.tc||''}"></div>
+      <div class="form-group"><label>Hours Plan %</label><input id="f-pac-hp" value="${p.hp||''}"></div>
+      <div class="form-group"><label>JRS & Skills %</label><input id="f-pac-jrs" value="${p.jrs||''}"></div>
+    </div>
+    <button class="btn-primary" onclick="savePAC()">&#128190; Save</button><span class="saved-msg" id="saved-pac">&#10003; Saved!</span>`;
+  }
+
+  else if(section==='compliance') {
+    const rows = d.compliance||[];
+    html += `<div style="overflow-x:auto;"><table class="tbl-editor" id="compliance-editor-table">
+      <thead><tr><th>Country</th><th>HC Count</th><th>CV %</th><th>Timely %</th><th>Hours %</th><th>JRS %</th><th>Overall %</th><th></th></tr></thead>
+      <tbody>`;
+    rows.forEach((r,i) => {
+      html += `<tr>
+        <td><input value="${r.country}" onchange="updateCompliance(${i},'country',this.value)"></td>
+        <td><input type="number" value="${r.hc}" onchange="updateCompliance(${i},'hc',this.value)"></td>
+        <td><input type="number" step="0.1" value="${r.cv}" onchange="updateCompliance(${i},'cv',this.value)"></td>
+        <td><input type="number" step="0.1" value="${r.tc}" onchange="updateCompliance(${i},'tc',this.value)"></td>
+        <td><input type="number" step="0.1" value="${r.hp}" onchange="updateCompliance(${i},'hp',this.value)"></td>
+        <td><input type="number" step="0.1" value="${r.jrs}" onchange="updateCompliance(${i},'jrs',this.value)"></td>
+        <td><input type="number" step="0.1" value="${r.ov}" onchange="updateCompliance(${i},'ov',this.value)"></td>
+        <td><button class="del-btn" onclick="deleteComplianceRow(${i})">&#128465;</button></td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>
+    <button class="add-row-btn" onclick="addComplianceRow()">+ Add Row</button>
+    <button class="btn-primary" onclick="saveCompliance()">&#128190; Save</button><span class="saved-msg" id="saved-comp">&#10003; Saved!</span>`;
+  }
+
+  else if(section==='ppm') {
+    const pm = d.ppm||{};
+    html += `<div class="form-grid">
+      <div class="form-section-title">PPM Summary</div>
+      <div class="form-group"><label>As-of Date</label><input id="f-ppm-date" value="${pm.date||''}"></div>
+      <div class="form-group"><label>Practitioners Count</label><input id="f-ppm-practitioners" value="${pm.practitioners||''}"></div>
+      <div class="form-group"><label>% of HC</label><input id="f-ppm-pct" value="${pm.pct||''}"></div>
+      <div class="form-group"><label>HC Note (e.g. *21,982 FTEs)</label><input id="f-ppm-hc-note" value="${pm.hc_note||''}"></div>
+      <div class="form-group"><label>Monitor-Recent Assignment %</label><input id="f-ppm-mra" value="${pm.mra||''}"></div>
+      <div class="form-group"><label>Reskill/Upskill/Cross-skill %</label><input id="f-ppm-reskill" value="${pm.reskill||''}"></div>
+    </div>
+    <button class="btn-primary" onclick="savePPM()">&#128190; Save</button><span class="saved-msg" id="saved-ppm">&#10003; Saved!</span>`;
+  }
+
+  else if(section==='ppm_countries') {
+    const rows = d.ppm_countries||[];
+    html += `<div style="overflow-x:auto;"><table class="tbl-editor">
+      <thead><tr><th>Country</th><th>MRA</th><th>Reskill</th><th>ADH</th><th>Alt.Sol</th><th>Leaving IBM</th><th>Other</th><th>Total</th><th></th></tr></thead>
+      <tbody>`;
+    rows.forEach((r,i) => {
+      html += `<tr>
+        <td><input value="${r.country}" onchange="updatePPMCountry(${i},'country',this.value)"></td>
+        <td><input type="number" value="${r.mra}" onchange="updatePPMCountry(${i},'mra',this.value)"></td>
+        <td><input type="number" value="${r.reskill}" onchange="updatePPMCountry(${i},'reskill',this.value)"></td>
+        <td><input type="number" value="${r.adh}" onchange="updatePPMCountry(${i},'adh',this.value)"></td>
+        <td><input type="number" value="${r.alt}" onchange="updatePPMCountry(${i},'alt',this.value)"></td>
+        <td><input type="number" value="${r.leaving}" onchange="updatePPMCountry(${i},'leaving',this.value)"></td>
+        <td><input type="number" value="${r.other}" onchange="updatePPMCountry(${i},'other',this.value)"></td>
+        <td><input type="number" value="${r.total}" onchange="updatePPMCountry(${i},'total',this.value)"></td>
+        <td><button class="del-btn" onclick="deletePPMRow(${i})">&#128465;</button></td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>
+    <button class="add-row-btn" onclick="addPPMRow()">+ Add Row</button>
+    <button class="btn-primary" onclick="savePPMCountries()">&#128190; Save</button><span class="saved-msg" id="saved-ppmc">&#10003; Saved!</span>`;
+  }
+
+  else if(section==='utilization') {
+    const u = d.utilization||{};
+    html += `<div class="form-grid">
+      <div class="form-section-title">Utilization</div>
+      <div class="form-group"><label>As-of Date</label><input id="f-util-date" value="${u.date||''}"></div>
+      <div class="form-group"><label>QTD CU %</label><input id="f-util-qtd" value="${u.qtd||''}"></div>
+      <div class="form-group" style="grid-column:1/-1"><label>Delta / Forecast Note</label><input id="f-util-delta" value="${u.delta||''}"></div>
+      <div class="form-group"><label>Missing Claim %</label><input id="f-util-mc" value="${u.mc||''}"></div>
+      <div class="form-group"><label>AAID %</label><input id="f-util-aaid" value="${u.aaid||''}"></div>
+      <div class="form-group"><label>Idle-Time %</label><input id="f-util-idle" value="${u.idle||''}"></div>
+      <div class="form-group"><label>Learning %</label><input id="f-util-learn" value="${u.learn||''}"></div>
+    </div>
+    <button class="btn-primary" onclick="saveUtilization()">&#128190; Save</button><span class="saved-msg" id="saved-util">&#10003; Saved!</span>`;
+  }
+
+  return html;
+}
+
+// ── SAVE FUNCTIONS ──
+function gv(id) { const el=document.getElementById(id); return el?el.value:''; }
+function showSaved(id) {
+  const el=document.getElementById(id);
+  if(el){el.style.display='inline';setTimeout(()=>el.style.display='none',2000);}
+}
+
+function saveCapacity() {
+  if(!store[currentEditorKey]) store[currentEditorKey]={};
+  store[currentEditorKey].capacity = {
+    hc_value:gv('f-hc-value'), hc_mtm:gv('f-hc-mtm'), hc_yty:gv('f-hc-yty'),
+    bm_value:gv('f-bm-value'), bm_mtm_yty:gv('f-bm-mtm-yty'),
+    lcc_value:gv('f-lcc-value'), lcc_mtm_yty:gv('f-lcc-mtm-yty'),
+    hm_sto:gv('f-hm-sto'), hm_sta:gv('f-hm-sta'), hm_ato:gv('f-hm-ato'),
+    hm_sto_pct:gv('f-hm-sto-pct'), hm_sta_pct:gv('f-hm-sta-pct'), hm_ato_pct:gv('f-hm-ato-pct'),
+    hm_note:gv('f-hm-note')
+  };
+  saveStore(store); showSaved('saved-cap');
+}
+function saveFulfillment() {
+  if(!store[currentEditorKey]) store[currentEditorKey]={};
+  store[currentEditorKey].fulfillment = {
+    fr_prev_label:gv('f-fr-prev-label'), fr_prev:gv('f-fr-prev'),
+    fr_prev_apac:gv('f-fr-prev-apac'), fr_prev_am:gv('f-fr-prev-am'), fr_prev_emea:gv('f-fr-prev-emea'),
+    fr_cur_label:gv('f-fr-cur-label'), fr_cur:gv('f-fr-cur'),
+    fr_cur_apac:gv('f-fr-cur-apac'), fr_cur_am:gv('f-fr-cur-am'), fr_cur_emea:gv('f-fr-cur-emea')
+  };
+  saveStore(store); showSaved('saved-ful');
+}
+function saveDI() {
+  if(!store[currentEditorKey]) store[currentEditorKey]={};
+  store[currentEditorKey].di_issues = {
+    jrs_nv:gv('f-jrs-nv'), jrs_nv_pct:gv('f-jrs-nv-pct'),
+    bench:gv('f-bench'), bench_pct:gv('f-bench-pct'),
+    jrs_sm:gv('f-jrs-sm'), jrs_sm_pct:gv('f-jrs-sm-pct'),
+    ub_30:gv('f-ub-30'), ub_30_pct:gv('f-ub-30-pct'),
+    ub_90:gv('f-ub-90'), ub_90_pct:gv('f-ub-90-pct')
+  };
+  saveStore(store); showSaved('saved-di');
+}
+function savePAC() {
+  if(!store[currentEditorKey]) store[currentEditorKey]={};
+  store[currentEditorKey].pac = {
+    date:gv('f-pac-date'), overall:gv('f-pac-overall'),
+    cv:gv('f-pac-cv'), tc:gv('f-pac-tc'), hp:gv('f-pac-hp'), jrs:gv('f-pac-jrs')
+  };
+  saveStore(store); showSaved('saved-pac');
+}
+function saveCompliance() { saveStore(store); showSaved('saved-comp'); }
+function updateCompliance(i, field, val) {
+  if(!store[currentEditorKey].compliance) return;
+  const v = field==='country'?val:parseFloat(val)||0;
+  store[currentEditorKey].compliance[i][field] = v;
+}
+function deleteComplianceRow(i) {
+  store[currentEditorKey].compliance.splice(i,1);
+  saveStore(store); showEditorSection('compliance',null);
+}
+function addComplianceRow() {
+  if(!store[currentEditorKey].compliance) store[currentEditorKey].compliance=[];
+  store[currentEditorKey].compliance.push({country:'New Country',hc:0,cv:0,tc:0,hp:0,jrs:0,ov:0});
+  showEditorSection('compliance',null);
+}
+function savePPM() {
+  if(!store[currentEditorKey]) store[currentEditorKey]={};
+  store[currentEditorKey].ppm = {
+    date:gv('f-ppm-date'), practitioners:gv('f-ppm-practitioners'),
+    pct:gv('f-ppm-pct'), hc_note:gv('f-ppm-hc-note'),
+    mra:gv('f-ppm-mra'), reskill:gv('f-ppm-reskill')
+  };
+  saveStore(store); showSaved('saved-ppm');
+}
+function savePPMCountries() { saveStore(store); showSaved('saved-ppmc'); }
+function updatePPMCountry(i,field,val) {
+  if(!store[currentEditorKey].ppm_countries) return;
+  const v = field==='country'?val:parseInt(val)||0;
+  store[currentEditorKey].ppm_countries[i][field]=v;
+}
+function deletePPMRow(i) {
+  store[currentEditorKey].ppm_countries.splice(i,1);
+  saveStore(store); showEditorSection('ppm_countries',null);
+}
+function addPPMRow() {
+  if(!store[currentEditorKey].ppm_countries) store[currentEditorKey].ppm_countries=[];
+  store[currentEditorKey].ppm_countries.push({country:'New',mra:0,reskill:0,adh:0,alt:0,leaving:0,other:0,total:0});
+  showEditorSection('ppm_countries',null);
+}
+function saveUtilization() {
+  if(!store[currentEditorKey]) store[currentEditorKey]={};
+  store[currentEditorKey].utilization = {
+    date:gv('f-util-date'), qtd:gv('f-util-qtd'), delta:gv('f-util-delta'),
+    mc:gv('f-util-mc'), aaid:gv('f-util-aaid'), idle:gv('f-util-idle'), learn:gv('f-util-learn')
+  };
+  saveStore(store); showSaved('saved-util');
+}
+
+// ══════════════════════════════════════════════════
+//  YTD TRENDS
+// ══════════════════════════════════════════════════
+function renderYTD() {
+  const year = document.getElementById('ytd-year').value;
+  const keys = Object.keys(store).filter(k=>k.startsWith(year+'-')).sort();
+  const months = keys.map(k => MONTHS[parseInt(k.split('-')[1])-1].substring(0,3));
+
+  const metrics = [
+    { label:'Headcount', extract: d => parseFloat((d.capacity?.hc_value||'0').replace(/,/g,''))||null, color:'#7c3aed', format:v=>v?v.toLocaleString():'' },
+    { label:'Band Mix',  extract: d => parseFloat(d.capacity?.bm_value)||null, color:'#06b6d4', format:v=>v?v.toFixed(2):'' },
+    { label:'LCC Hires %', extract: d => parseFloat(d.capacity?.lcc_value)||null, color:'#10b981', format:v=>v?v.toFixed(1)+'%':'' },
+    { label:'Fill Rate (Current) %', extract: d => parseFloat(d.fulfillment?.fr_cur)||null, color:'#f59e0b', format:v=>v?v+'%':'' },
+    { label:'Overall Compliance %', extract: d => parseFloat(d.pac?.overall)||null, color:'#ec4899', format:v=>v?v+'%':'' },
+    { label:'CV Compliance %', extract: d => parseFloat(d.pac?.cv)||null, color:'#3b82f6', format:v=>v?v+'%':'' },
+    { label:'Timely Claim %', extract: d => parseFloat(d.pac?.tc)||null, color:'#8b5cf6', format:v=>v?v+'%':'' },
+    { label:'Hours Plan %', extract: d => parseFloat(d.pac?.hp)||null, color:'#06b6d4', format:v=>v?v+'%':'' },
+    { label:'JRS & Skills %', extract: d => parseFloat(d.pac?.jrs)||null, color:'#f97316', format:v=>v?v+'%':'' },
+    { label:'QTD CU %', extract: d => parseFloat(d.utilization?.qtd)||null, color:'#14b8a6', format:v=>v?v+'%':'' },
+    { label:'PPM Practitioners', extract: d => parseInt(d.ppm?.practitioners)||null, color:'#f43f5e', format:v=>v?v:''},
+    { label:'JRS Not Valid', extract: d => parseInt(d.di_issues?.jrs_nv)||null, color:'#a78bfa', format:v=>v?v:''},
+    { label:'On Bench Cases', extract: d => parseInt(d.di_issues?.bench)||null, color:'#34d399', format:v=>v?v:''}
+  ];
+
+  const gridEl = document.getElementById('ytd-grid');
+  gridEl.innerHTML = metrics.map(m => {
+    const vals = keys.map(k => m.extract(store[k]));
+    return `<div class="ytd-chart-card">
+      <h3>${m.label}</h3>
+      <div class="chart-container">${buildSVGLine(months, vals, m.color)}</div>
+    </div>`;
+  }).join('');
+
+  // Summary table
+  const thead = document.getElementById('ytd-table-head');
+  const tbody = document.getElementById('ytd-table-body');
+  thead.innerHTML = '<th>Metric</th>' + months.map(m=>`<th>${m}</th>`).join('');
+  tbody.innerHTML = metrics.map(m => {
+    const vals = keys.map(k => m.extract(store[k]));
+    return `<tr><td>${m.label}</td>${vals.map(v=>`<td>${v!==null?m.format(v):'—'}</td>`).join('')}</tr>`;
+  }).join('');
+}
+
+function buildSVGLine(labels, values, color) {
+  const W=360, H=130, padL=36, padR=10, padT=12, padB=28;
+  const valid = values.filter(v=>v!==null);
+  if(!valid.length) return `<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}"><text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#94a3b8" font-size="12">No data</text></svg>`;
+  const minV = Math.min(...valid)*0.97, maxV = Math.max(...valid)*1.03 || minV+1;
+  const xScale = (i) => padL + i*(W-padL-padR)/(labels.length-1||1);
+  const yScale = (v) => padT + (1-(v-minV)/(maxV-minV))*(H-padT-padB);
+  const pts = values.map((v,i)=>v!==null?`${xScale(i).toFixed(1)},${yScale(v).toFixed(1)}`:null).filter(Boolean);
+  const pathD = pts.map((p,i)=>(i===0?'M':'L')+p).join(' ');
+  const areaD = pts.length?`${pathD} L${xScale(values.length-1).toFixed(1)},${H-padB} L${xScale(0).toFixed(1)},${H-padB} Z`:'';
+  const dots = values.map((v,i)=>v!==null?`<circle cx="${xScale(i).toFixed(1)}" cy="${yScale(v).toFixed(1)}" r="3.5" fill="${color}"><title>${labels[i]}: ${v}</title></circle>`:'').join('');
+  const xLabels = labels.map((l,i)=>`<text x="${xScale(i).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="9" fill="#64748b">${l}</text>`).join('');
+  const yMid = ((minV+maxV)/2);
+  const yLabels = [maxV,yMid,minV].map((v,i)=>`<text x="${padL-4}" y="${yScale(v).toFixed(1)}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="#94a3b8">${v>=1000?(v/1000).toFixed(0)+'k':v.toFixed(v>=10?0:1)}</text>`).join('');
+  return `<svg width="100%" viewBox="0 0 ${W} ${H}" style="display:block;">
+    <defs><linearGradient id="ag${color.replace('#','')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.2"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${areaD}" fill="url(#ag${color.replace('#','')})" />
+    <path d="${pathD}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    ${dots}${xLabels}${yLabels}
+    <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="#e2e8f0" stroke-width="1"/>
+  </svg>`;
+}
+
+// ══════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════
+updateDashMonthSelect();
+renderDashboard();
+showEditorSection('capacity', document.querySelector('.editor-menu-item'));
+</script>
+</body>
+</html>
